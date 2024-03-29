@@ -40,6 +40,7 @@ def _init_dist_slurm(backend, port=None):
     ntasks = int(os.environ['SLURM_NTASKS'])
     node_list = os.environ['SLURM_NODELIST']
     num_gpus = torch.cuda.device_count()
+    # print(f'num_gpus: {num_gpus}', proc_id)
     torch.cuda.set_device(proc_id % num_gpus)
     addr = subprocess.getoutput(
         f'scontrol show hostname {node_list} | head -n1')
@@ -53,7 +54,8 @@ def _init_dist_slurm(backend, port=None):
         os.environ['MASTER_PORT'] = '29500'
     os.environ['MASTER_ADDR'] = addr
     os.environ['WORLD_SIZE'] = str(ntasks)
-    os.environ['LOCAL_RANK'] = str(proc_id % num_gpus)
+    print(proc_id, num_gpus)
+    # os.environ['LOCAL_RANK'] = str(proc_id % num_gpus)
     os.environ['RANK'] = str(proc_id)
     dist.init_process_group(backend=backend)
 

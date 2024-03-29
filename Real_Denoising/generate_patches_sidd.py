@@ -13,27 +13,28 @@ from tqdm import tqdm
 from pdb import set_trace as stx
 
 
-src = 'Datasets/Downloads/SIDD'
-tar = 'Datasets/train/SIDD'
+src_inp = 'Datasets/Synthetic_DS/val'
+src_gt = 'Datasets/Publaynet/train'
 
-lr_tar = os.path.join(tar, 'input_crops')
-hr_tar = os.path.join(tar, 'target_crops')
+tar = 'Datasets/Synthetic_DS/val_crops'
+
+lr_tar = os.path.join(tar, 'input')
+hr_tar = os.path.join(tar, 'target')
 
 os.makedirs(lr_tar, exist_ok=True)
 os.makedirs(hr_tar, exist_ok=True)
 
-files = natsorted(glob(os.path.join(src, '*', '*.PNG')))
+files = natsorted(glob(os.path.join(src_inp, '*.jpg')))
 
 lr_files, hr_files = [], []
 for file_ in files:
-    filename = os.path.split(file_)[-1]
-    if 'GT' in filename:
-        hr_files.append(file_)
-    if 'NOISY' in filename:
-        lr_files.append(file_)
+    # filename = os.path.split(file_)[-1]
+    lr_files.append(file_)
+    hr_files.append(file_.replace(src_inp, src_gt))
 
+# print
 files = [(i, j) for i, j in zip(lr_files, hr_files)]
-
+# print(files)
 patch_size = 512
 overlap = 128
 p_max = 0

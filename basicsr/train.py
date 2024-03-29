@@ -17,8 +17,11 @@ from basicsr.utils import (MessageLogger, check_resume, get_env_info,
                            set_random_seed)
 from basicsr.utils.dist_util import get_dist_info, init_dist
 from basicsr.utils.options import dict2str, parse
+import wandb
 
 import numpy as np
+
+# print(torch.cuda.device_count())
 
 def parse_options(is_train=True):
     parser = argparse.ArgumentParser()
@@ -29,7 +32,7 @@ def parse_options(is_train=True):
         choices=['none', 'pytorch', 'slurm'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local-rank', type=int, default=0)
     args = parser.parse_args()
     opt = parse(args.opt, is_train=is_train)
 
@@ -222,87 +225,90 @@ def main():
     scale = opt['scale']
 
     epoch = start_epoch
-    while current_iter <= total_iters:
-        train_sampler.set_epoch(epoch)
-        prefetcher.reset()
-        train_data = prefetcher.next()
-
-        while train_data is not None:
-            data_time = time.time() - data_time
-
-            current_iter += 1
-            if current_iter > total_iters:
-                break
-            # update learning rate
-            model.update_learning_rate(
-                current_iter, warmup_iter=opt['train'].get('warmup_iter', -1))
-
-            
-            ### ------Progressive learning ---------------------
-            j = ((current_iter>groups) !=True).nonzero()[0]
-            if len(j) == 0:
-                bs_j = len(groups) - 1
-            else:
-                bs_j = j[0]
-
-            mini_gt_size = mini_gt_sizes[bs_j]
-            mini_batch_size = mini_batch_sizes[bs_j]
-            
-            if logger_j[bs_j]:
-                logger.info('\n Updating Patch_Size to {} and Batch_Size to {} \n'.format(mini_gt_size, mini_batch_size*torch.cuda.device_count())) 
-                logger_j[bs_j] = False
-
-            lq = train_data['lq']
-            gt = train_data['gt']
-
-            if mini_batch_size < batch_size:
-                indices = random.sample(range(0, batch_size), k=mini_batch_size)
-                lq = lq[indices]
-                gt = gt[indices]
-
-            if mini_gt_size < gt_size:
-                x0 = int((gt_size - mini_gt_size) * random.random())
-                y0 = int((gt_size - mini_gt_size) * random.random())
-                x1 = x0 + mini_gt_size
-                y1 = y0 + mini_gt_size
-                lq = lq[:,:,x0:x1,y0:y1]
-                gt = gt[:,:,x0*scale:x1*scale,y0*scale:y1*scale]
-            ###-------------------------------------------
-
-            
-            model.feed_train_data({'lq': lq, 'gt':gt})
-            model.optimize_parameters(current_iter)
-
-            iter_time = time.time() - iter_time
-            # log
-            if current_iter % opt['logger']['print_freq'] == 0:
-                log_vars = {'epoch': epoch, 'iter': current_iter}
-                log_vars.update({'lrs': model.get_current_learning_rate()})
-                log_vars.update({'time': iter_time, 'data_time': data_time})
-                log_vars.update(model.get_current_log())
-                msg_logger(log_vars)
-
-            # save models and training states
-            if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
-                logger.info('Saving models and training states.')
-                model.save(epoch, current_iter)
-
-            # validation
-            if opt.get('val') is not None and (current_iter %
-                                               opt['val']['val_freq'] == 0):
-                rgb2bgr = opt['val'].get('rgb2bgr', True)
-                # wheather use uint8 image to compute metrics
-                use_image = opt['val'].get('use_image', True)
-                model.validation(val_loader, current_iter, tb_logger,
-                                 opt['val']['save_img'], rgb2bgr, use_image )
-
-            data_time = time.time()
-            iter_time = time.time()
+    with wandb.init(project='mirnet', config=opt) as run:
+        while current_iter <= total_iters:
+            train_sampler.set_epoch(epoch)
+            prefetcher.reset()
             train_data = prefetcher.next()
-        # end of iter
-        epoch += 1
 
-    # end of epoch
+            while train_data is not None:
+                data_time = time.time() - data_time
+
+                current_iter += 1
+                if current_iter > total_iters:
+                    break
+                # update learning rate
+                model.update_learning_rate(
+                    current_iter, warmup_iter=opt['train'].get('warmup_iter', -1))
+
+                
+                ### ------Progressive learning ---------------------
+                j = ((current_iter>groups) !=True).nonzero()[0]
+                if len(j) == 0:
+                    bs_j = len(groups) - 1
+                else:
+                    bs_j = j[0]
+
+                mini_gt_size = mini_gt_sizes[bs_j]
+                mini_batch_size = mini_batch_sizes[bs_j]
+                
+                if logger_j[bs_j]:
+                    logger.info('\n Updating Patch_Size to {} and Batch_Size to {} \n'.format(mini_gt_size, mini_batch_size*torch.cuda.device_count())) 
+                    logger_j[bs_j] = False
+
+                lq = train_data['lq']
+                gt = train_data['gt']
+
+                if mini_batch_size < batch_size:
+                    indices = random.sample(range(0, batch_size), k=mini_batch_size)
+                    lq = lq[indices]
+                    gt = gt[indices]
+
+                if mini_gt_size < gt_size:
+                    x0 = int((gt_size - mini_gt_size) * random.random())
+                    y0 = int((gt_size - mini_gt_size) * random.random())
+                    x1 = x0 + mini_gt_size
+                    y1 = y0 + mini_gt_size
+                    lq = lq[:,:,x0:x1,y0:y1]
+                    gt = gt[:,:,x0*scale:x1*scale,y0*scale:y1*scale]
+                ###-------------------------------------------
+
+                
+                model.feed_train_data({'lq': lq, 'gt':gt})
+                loss = model.optimize_parameters(current_iter)
+
+                wandb.log({'loss': loss, 'epoch': epoch, 'iter': current_iter, 'lr': model.get_current_learning_rate()})
+
+                iter_time = time.time() - iter_time
+                # log
+                if current_iter % opt['logger']['print_freq'] == 0:
+                    log_vars = {'epoch': epoch, 'iter': current_iter}
+                    log_vars.update({'lrs': model.get_current_learning_rate()})
+                    log_vars.update({'time': iter_time, 'data_time': data_time})
+                    log_vars.update(model.get_current_log())
+                    msg_logger(log_vars)
+
+                # save models and training states
+                if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
+                    logger.info('Saving models and training states.')
+                    model.save(epoch, current_iter)
+
+                # validation
+                if opt.get('val') is not None and (current_iter %
+                                                opt['val']['val_freq'] == 0):
+                    rgb2bgr = opt['val'].get('rgb2bgr', True)
+                    # wheather use uint8 image to compute metrics
+                    use_image = opt['val'].get('use_image', True)
+                    model.validation(val_loader, current_iter, tb_logger,
+                                    opt['val']['save_img'], rgb2bgr, use_image )
+
+                data_time = time.time()
+                iter_time = time.time()
+                train_data = prefetcher.next()
+            # end of iter
+            epoch += 1
+
+        # end of epoch
 
     consumed_time = str(
         datetime.timedelta(seconds=int(time.time() - start_time)))
@@ -311,7 +317,7 @@ def main():
     model.save(epoch=-1, current_iter=-1)  # -1 stands for the latest
     if opt.get('val') is not None:
         model.validation(val_loader, current_iter, tb_logger,
-                         opt['val']['save_img'])
+                        opt['val']['save_img'])
     if tb_logger:
         tb_logger.close()
 

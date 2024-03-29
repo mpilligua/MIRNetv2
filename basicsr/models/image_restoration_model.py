@@ -171,6 +171,8 @@ class ImageCleanModel(BaseModel):
 
         if self.ema_decay > 0:
             self.model_ema(decay=self.ema_decay)
+        
+        return l_pix
 
     def pad_test(self, window_size):        
         scale = self.opt.get('scale', 1)

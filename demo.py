@@ -24,6 +24,18 @@ from tqdm import tqdm
 import argparse
 from pdb import set_trace as stx
 import numpy as np
+import fnmatch
+
+def find_files(directory, pattern):
+    L = []
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = os.path.join(root, basename)
+                L.append(filename)
+    
+    return L
+                
 
 parser = argparse.ArgumentParser(description='Test MIRNet-v2 on your own images')
 parser.add_argument('--input_dir', default='./demo/degraded/', type=str, help='Directory of input images or path of single image')
@@ -46,9 +58,10 @@ def save_img(filepath, img):
 
 def get_weights_and_parameters(task, parameters):
     if task == 'real_denoising':
-        weights = os.path.join('Real_Denoising', 'pretrained_models', 'real_denoising.pth')
-        if not os.path.exists(weights):
-            os.system('wget https://github.com/swz30/MIRNetv2/releases/download/v1.0.0/real_denoising.pth -P Real_Denoising/pretrained_models/')
+        # weights = os.path.join('Real_Denoising', 'pretrained_models', 'real_denoising.pth')
+        # if not os.path.exists(weights):
+        #     os.system('wget https://github.com/swz30/MIRNetv2/releases/download/v1.0.0/real_denoising.pth -P Real_Denoising/pretrained_models/')
+        weights = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/experiments/RealDenoising_MIRNet_v2/models/net_g_51000.pth"
 
     elif task == 'super_resolution':
         weights = os.path.join('Super_Resolution', 'pretrained_models', 'sr_x4.pth')
@@ -70,22 +83,24 @@ def get_weights_and_parameters(task, parameters):
 
 task    = args.task
 inp_dir = args.input_dir
-out_dir = os.path.join(args.result_dir, task)
+# out_dir = os.path.join(args.result_dir, task)
+out_dir = args.result_dir
 
 os.makedirs(out_dir, exist_ok=True)
 
 extensions = ['jpg', 'JPG', 'png', 'PNG', 'jpeg', 'JPEG', 'bmp', 'BMP']
 
-if any([inp_dir.endswith(ext) for ext in extensions]):
-    files = [inp_dir]
-else:
-    files = []
-    for ext in extensions:
-        files.extend(glob(os.path.join(inp_dir, '*.'+ext)))
-    files = natsorted(files)
+# if any([inp_dir.endswith(ext) for ext in extensions]):
+#     files = [inp_dir]
+# else:
+#     files = []
+#     for ext in extensions:
+#         # files.extend(glob(os.path.join(inp_dir, '*.'+ext), recursive=True))
+#         files.extend(find_files(inp_dir, '*.'+ext))
+#     files = natsorted(files)
 
-if len(files) == 0:
-    raise Exception(f'No files found at {inp_dir}')
+# if len(files) == 0:
+#     raise Exception(f'No files found at {inp_dir}')
 
 # Get model weights and parameters
 parameters = {
@@ -122,59 +137,63 @@ img_multiple_of = 4
 print(f"\n ==> Running {task} with weights {weights}\n ")
 
 with torch.inference_mode():
-    for file_ in tqdm(files):
-        if torch.cuda.is_available():
-            torch.cuda.ipc_collect()
-            torch.cuda.empty_cache()
+    for root, dir, files in os.walk(inp_dir):
+        for file_ in tqdm(files):
+            if not any([file_.endswith(ext) for ext in extensions]):
+                continue
+            if torch.cuda.is_available():
+                torch.cuda.ipc_collect()
+                torch.cuda.empty_cache()
 
-        img = load_img(file_)
+            img = load_img(root + "/" + file_)
 
-        input_ = torch.from_numpy(img).float().div(255.).permute(2,0,1).unsqueeze(0).to(device)
+            input_ = torch.from_numpy(img).float().div(255.).permute(2,0,1).unsqueeze(0).to(device)
 
-        # Pad the input if not_multiple_of 8
-        height,width = input_.shape[2], input_.shape[3]
-        H,W = ((height+img_multiple_of)//img_multiple_of)*img_multiple_of, ((width+img_multiple_of)//img_multiple_of)*img_multiple_of
-        padh = H-height if height%img_multiple_of!=0 else 0
-        padw = W-width if width%img_multiple_of!=0 else 0
-        input_ = F.pad(input_, (0,padw,0,padh), 'reflect')
+            # Pad the input if not_multiple_of 8
+            height,width = input_.shape[2], input_.shape[3]
+            H,W = ((height+img_multiple_of)//img_multiple_of)*img_multiple_of, ((width+img_multiple_of)//img_multiple_of)*img_multiple_of
+            padh = H-height if height%img_multiple_of!=0 else 0
+            padw = W-width if width%img_multiple_of!=0 else 0
+            input_ = F.pad(input_, (0,padw,0,padh), 'reflect')
 
-        if args.tile is None:
-            ## Testing on the original resolution image
-            restored = model(input_)
-        else:
-            # test the image tile by tile
-            b, c, h, w = input_.shape
-            tile = min(args.tile, h, w)
-            assert tile % 4 == 0, "tile size should be multiple of 4"
-            tile_overlap = args.tile_overlap
+            if args.tile is None:
+                ## Testing on the original resolution image
+                restored = model(input_)
+            else:
+                # test the image tile by tile
+                b, c, h, w = input_.shape
+                tile = min(args.tile, h, w)
+                assert tile % 4 == 0, "tile size should be multiple of 4"
+                tile_overlap = args.tile_overlap
 
-            stride = tile - tile_overlap
-            h_idx_list = list(range(0, h-tile, stride)) + [h-tile]
-            w_idx_list = list(range(0, w-tile, stride)) + [w-tile]
-            E = torch.zeros(b, c, h, w).type_as(input_)
-            W = torch.zeros_like(E)
+                stride = tile - tile_overlap
+                h_idx_list = list(range(0, h-tile, stride)) + [h-tile]
+                w_idx_list = list(range(0, w-tile, stride)) + [w-tile]
+                E = torch.zeros(b, c, h, w).type_as(input_)
+                W = torch.zeros_like(E)
 
-            for h_idx in h_idx_list:
-                for w_idx in w_idx_list:
-                    in_patch = input_[..., h_idx:h_idx+tile, w_idx:w_idx+tile]
-                    out_patch = model(in_patch)
-                    out_patch_mask = torch.ones_like(out_patch)
+                for h_idx in h_idx_list:
+                    for w_idx in w_idx_list:
+                        in_patch = input_[..., h_idx:h_idx+tile, w_idx:w_idx+tile]
+                        out_patch = model(in_patch)
+                        out_patch_mask = torch.ones_like(out_patch)
 
-                    E[..., h_idx:(h_idx+tile), w_idx:(w_idx+tile)].add_(out_patch)
-                    W[..., h_idx:(h_idx+tile), w_idx:(w_idx+tile)].add_(out_patch_mask)
-            restored = E.div_(W)
+                        E[..., h_idx:(h_idx+tile), w_idx:(w_idx+tile)].add_(out_patch)
+                        W[..., h_idx:(h_idx+tile), w_idx:(w_idx+tile)].add_(out_patch_mask)
+                restored = E.div_(W)
 
-        restored = torch.clamp(restored, 0, 1)
+            restored = torch.clamp(restored, 0, 1)
 
-        # Unpad the output
-        restored = restored[:,:,:height,:width]
+            # Unpad the output
+            restored = restored[:,:,:height,:width]
 
-        restored = restored.permute(0, 2, 3, 1).cpu().detach().numpy()
-        restored = img_as_ubyte(restored[0])
+            restored = restored.permute(0, 2, 3, 1).cpu().detach().numpy()
+            restored = img_as_ubyte(restored[0])
 
-        f = os.path.splitext(os.path.split(file_)[-1])[0]
-        # stx()
+            f = os.path.splitext(os.path.split(file_)[-1])[0]
+            # stx()
 
-        save_img((os.path.join(out_dir, f+'.png')), restored)
+            os.makedirs(root.replace(inp_dir, out_dir), exist_ok=True)
+            save_img(root.replace(inp_dir, out_dir) + f'/{f}.png', restored)
 
-    print(f"\nRestored images are saved at {out_dir}")
+        print(f"\nRestored images are saved at {out_dir}")
