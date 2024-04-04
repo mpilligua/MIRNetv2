@@ -20,6 +20,7 @@ from basicsr.utils.options import dict2str, parse
 import wandb
 
 import numpy as np
+from datetime import datetime
 
 # print(torch.cuda.device_count())
 
@@ -56,6 +57,8 @@ def parse_options(is_train=True):
         seed = random.randint(1, 10000)
         opt['manual_seed'] = seed
     set_random_seed(seed + opt['rank'])
+
+    opt["name"] = opt["name"] + "_" + datetime.now().__str__()[0:19]
 
     return opt
 
@@ -225,7 +228,7 @@ def main():
     scale = opt['scale']
 
     epoch = start_epoch
-    with wandb.init(project='mirnet', config=opt) as run:
+    with wandb.init(project='Document Conversion', config=opt, group="MirNet+OCR_perceptual_loss", name=opt["name"]) as run:
         while current_iter <= total_iters:
             train_sampler.set_epoch(epoch)
             prefetcher.reset()
@@ -299,9 +302,11 @@ def main():
                     rgb2bgr = opt['val'].get('rgb2bgr', True)
                     # wheather use uint8 image to compute metrics
                     use_image = opt['val'].get('use_image', True)
-                    model.validation(val_loader, current_iter, tb_logger,
+                    current_metric = model.validation(val_loader, current_iter, tb_logger,
                                     opt['val']['save_img'], rgb2bgr, use_image )
 
+                    wandb.log({"psnr": current_metric})
+                    
                 data_time = time.time()
                 iter_time = time.time()
                 train_data = prefetcher.next()

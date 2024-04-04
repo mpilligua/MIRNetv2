@@ -5,6 +5,8 @@ events.out.tfevents.*
 *.err
 *.out
 *.*-*.pyc
+*.pyc
+*.cpython
 
 wandb*
 

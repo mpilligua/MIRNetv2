@@ -19,6 +19,14 @@ import cv2
 import torch.nn.functional as F
 from functools import partial
 
+import torch
+import sys
+sys.path.append('/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/DocEnTR')
+
+from basicsr.models.losses.lpips import OCR_CRAFT_LPIPS
+
+
+
 class Mixing_Augment:
     def __init__(self, mixup_beta, use_identity, device):
         self.dist = torch.distributions.beta.Beta(torch.tensor([mixup_beta]), torch.tensor([mixup_beta]))
@@ -64,6 +72,10 @@ class ImageCleanModel(BaseModel):
 
         self.net_g = define_network(deepcopy(opt['network_g']))
         self.net_g = self.model_to_device(self.net_g)
+        
+        
+        
+        
         self.print_network(self.net_g)
 
         # load pretrained models
@@ -107,6 +119,9 @@ class ImageCleanModel(BaseModel):
                 self.device)
         else:
             raise ValueError('pixel loss are None.')
+
+        self.OCR_perceptual_loss = OCR_CRAFT_LPIPS().eval()
+        self.OCR_perceptual_loss.to(self.device)
 
         # set up optimizers and schedulers
         self.setup_optimizers()
@@ -162,7 +177,17 @@ class ImageCleanModel(BaseModel):
 
         loss_dict['l_pix'] = l_pix
 
-        l_pix.backward()
+
+        print("ourput shape:", self.output.shape)
+        # Afegim la loss del ocr. Ha de tenir shape ((600, 800, 3)).astype(np.uint8)
+        # pred_pixel_values.unsqueeze_(1)
+        # pred_pixel_values = pred_pixel_values.repeat(1, 3, 1, 1)
+        loss_ocr = self.OCR_perceptual_loss(self.gt, self.output).mean()
+        loss_dict['loss_ocr'] = loss_ocr
+
+        loss = l_pix + loss_ocr
+
+        loss.backward()
         if self.opt['train']['use_grad_clip']:
             torch.nn.utils.clip_grad_norm_(self.net_g.parameters(), 0.01)
         self.optimizer_g.step()
@@ -172,7 +197,7 @@ class ImageCleanModel(BaseModel):
         if self.ema_decay > 0:
             self.model_ema(decay=self.ema_decay)
         
-        return l_pix
+        return loss_dict
 
     def pad_test(self, window_size):        
         scale = self.opt.get('scale', 1)
