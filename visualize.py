@@ -2,13 +2,14 @@
 import os
 import matplotlib.pyplot as plt
 
-input_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/demo/degraded"
-restored_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/demo/restored"
+input_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/demo/restored"
+restored_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/demo/restored_tables"
 gt_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Sample documents - PNG"
+gt_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/demo/degraded"
 
-out_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/visualization/"
+out_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/visualization_comparison/"
 
-gt = False
+gt = True
 for root, dir, files in os.walk(input_dir):
     for file in files:
         # try: 
@@ -31,7 +32,7 @@ for root, dir, files in os.walk(input_dir):
             plt.tight_layout()
 
             ax[2].imshow(gt_img)
-            ax[2].set_title('Ground Truth', fontsize=30)
+            ax[2].set_title('Input', fontsize=30)
             ax[2].axis('off')
             
         else: 
@@ -40,11 +41,11 @@ for root, dir, files in os.walk(input_dir):
             plt.tight_layout()
         
         ax[0].imshow(degraded)
-        ax[0].set_title('Degraded', fontsize=30)
+        ax[0].set_title('Restored_all', fontsize=30)
         ax[0].axis('off')
             
         ax[1].imshow(restored)
-        ax[1].set_title('Restored', fontsize=30)
+        ax[1].set_title('Restored_tables', fontsize=30)
         ax[1].axis('off')
         
         os.makedirs(os.path.join(root.replace(input_dir, out_dir)), exist_ok=True)

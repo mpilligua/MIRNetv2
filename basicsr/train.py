@@ -228,6 +228,8 @@ def main():
     scale = opt['scale']
 
     epoch = start_epoch
+    best_psnr = -1
+    current_metric = 0
     with wandb.init(project='Document Conversion', config=opt, group="MirNet+OCR_perceptual_loss", name=opt["name"]) as run:
         while current_iter <= total_iters:
             train_sampler.set_epoch(epoch)
@@ -307,6 +309,11 @@ def main():
 
                     wandb.log({"psnr": current_metric})
                     
+                if current_metric > best_psnr:
+                    best_psnr = current_metric
+                    logger.info('Saving best model.')
+                    model.save(epoch, current_iter, 'best')
+                        
                 data_time = time.time()
                 iter_time = time.time()
                 train_data = prefetcher.next()

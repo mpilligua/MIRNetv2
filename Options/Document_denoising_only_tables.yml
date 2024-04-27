@@ -1,8 +1,8 @@
 # general settings
-name: RealDenoising_MIRNet_v2
+name: Mirnet_v2
 model_type: ImageCleanModel
 scale: 1
-num_gpu: 8  # set num_gpu: 0 for cpu mode
+num_gpu: 2  # set num_gpu: 0 for cpu mode
 manual_seed: 100
 
 # dataset and data loader settings
@@ -10,8 +10,8 @@ datasets:
   train:
     name: TrainSet
     type: Dataset_PairedImage
-    dataroot_gt: ./Real_Denoising/Datasets/train/SIDD/target_crops
-    dataroot_lq: ./Real_Denoising/Datasets/train/SIDD/input_crops
+    dataroot_gt: /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS/train_crops_tables/target
+    dataroot_lq: /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS/train_crops_tables/input
     geometric_augs: true
 
     filename_tmpl: '{}'
@@ -43,8 +43,8 @@ datasets:
   val:
     name: ValSet
     type: Dataset_PairedImage
-    dataroot_gt: ./Real_Denoising/Datasets/val/SIDD/target_crops
-    dataroot_lq: ./Real_Denoising/Datasets/val/SIDD/input_crops
+    dataroot_gt: /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS/val_crops/target
+    dataroot_lq: /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS/val_crops/input
     io_backend:
       type: disk
 
@@ -64,13 +64,13 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/experiments/Synth_v2/models/zbest_1950.pth"
+  pretrain_network_g: ~
   strict_load_g: true
   resume_state: ~
 
 # training settings
 train:
-  total_iter: 300000
+  total_iter: 5000
   warmup_iter: -1 # no warm up
   use_grad_clip: true
 
@@ -117,14 +117,14 @@ val:
 
 # logging settings
 logger:
-  print_freq: 1000
-  save_checkpoint_freq: !!float 4e3
+  print_freq: 100
+  save_checkpoint_freq: 100
   use_tb_logger: true
   wandb:
-    project: ~
+    project: MIRNet_v2
     resume_id: ~
 
 # dist training settings
-dist_params:
-  backend: nccl
-  port: 29500
+# dist_params:
+#   backend: nccl
+#   port: 29500

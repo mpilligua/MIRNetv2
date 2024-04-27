@@ -119,3 +119,10 @@ speechlm/dataset/LibriSpeech/fast_phone2unit/dict.phn.txt
 experiments/RealDenoising_MIRNet_v2/models/net_g_5400.pth
 basicsr/models/__pycache__/__init__.cpython-38.pyc
 basicsr/metrics/__pycache__/__init__.cpython-38.pyc
+basicsr/models/__pycache__/__init__.cpython-38.pyc
+
+basicsr/models/__pycache__/*.pyc
+experiments/*
+visualization_comparison/*
+visualization/*
+visualization_tables/*

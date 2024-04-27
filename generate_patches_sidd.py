@@ -12,11 +12,25 @@ import os
 from tqdm import tqdm
 from pdb import set_trace as stx
 
+split = "val"
 
-src_inp = 'Datasets/Synthetic_DS/val'
-src_gt = 'Datasets/Publaynet/train'
+src_inp = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v2/' + split
+src_gt = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Publaynet/train'
 
-tar = 'Datasets/Synthetic_DS/val_crops'
+tar = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v2/' + split + '_crops'
+
+import json
+import pandas as pd
+
+# annot_path = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS/train.json'
+# with open(annot_path) as f:
+#     data = json.load(f)
+
+# annotations = pd.DataFrame(data["annotations"])
+# images = pd.DataFrame(data["images"])
+# # merge both dataframes on image_id
+# annotations = pd.merge(annotations, images, how='left', left_on='image_id', right_on='id')
+# docs_with_tables = annotations.groupby(['image_id']).filter(lambda x: (x['category_id'] == 4).any())['file_name'].to_list()
 
 lr_tar = os.path.join(tar, 'input')
 hr_tar = os.path.join(tar, 'target')
@@ -28,6 +42,8 @@ files = natsorted(glob(os.path.join(src_inp, '*.jpg')))
 
 lr_files, hr_files = [], []
 for file_ in files:
+    # if file_.split('/')[-1] not in docs_with_tables:
+    #     continue
     # filename = os.path.split(file_)[-1]
     lr_files.append(file_)
     hr_files.append(file_.replace(src_inp, src_gt))
@@ -47,8 +63,8 @@ def save_files(file_):
     num_patch = 0
     w, h = lr_img.shape[:2]
     if w > p_max and h > p_max:
-        w1 = list(np.arange(0, w-patch_size, patch_size-overlap, dtype=np.int))
-        h1 = list(np.arange(0, h-patch_size, patch_size-overlap, dtype=np.int))
+        w1 = list(np.arange(0, w-patch_size, patch_size-overlap, dtype=int))
+        h1 = list(np.arange(0, h-patch_size, patch_size-overlap, dtype=int))
         w1.append(w-patch_size)
         h1.append(h-patch_size)
         for i in w1:

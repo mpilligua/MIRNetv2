@@ -61,7 +61,7 @@ def get_weights_and_parameters(task, parameters):
         # weights = os.path.join('Real_Denoising', 'pretrained_models', 'real_denoising.pth')
         # if not os.path.exists(weights):
         #     os.system('wget https://github.com/swz30/MIRNetv2/releases/download/v1.0.0/real_denoising.pth -P Real_Denoising/pretrained_models/')
-        weights = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/experiments/RealDenoising_MIRNet_v2/models/net_g_51000.pth"
+        weights = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/experiments/Synth_v2/models/zbest_1950.pth"
 
     elif task == 'super_resolution':
         weights = os.path.join('Super_Resolution', 'pretrained_models', 'sr_x4.pth')
