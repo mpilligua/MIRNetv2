@@ -126,3 +126,4 @@ experiments/*
 visualization_comparison/*
 visualization/*
 visualization_tables/*
+*.pyc

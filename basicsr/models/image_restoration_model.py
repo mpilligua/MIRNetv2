@@ -27,6 +27,7 @@ from basicsr.models.losses.lpips import OCR_CRAFT_LPIPS
 
 
 
+
 class Mixing_Augment:
     def __init__(self, mixup_beta, use_identity, device):
         self.dist = torch.distributions.beta.Beta(torch.tensor([mixup_beta]), torch.tensor([mixup_beta]))
@@ -36,15 +37,16 @@ class Mixing_Augment:
 
         self.augments = [self.mixup]
 
-    def mixup(self, target, input_):
+    def mixup(self, v):
         lam = self.dist.rsample((1,1)).item()
     
-        r_index = torch.randperm(target.size(0)).to(self.device)
+        r_index = torch.randperm(v[0].size(0)).to(self.device)
     
-        target = lam * target + (1-lam) * target[r_index, :]
-        input_ = lam * input_ + (1-lam) * input_[r_index, :]
+        v2 = []
+        for element in v: 
+            v2.append(lam * element + (1 - lam) * element[r_index])
     
-        return target, input_
+        return v2
 
     def __call__(self, target, input_):
         if self.use_identity:
@@ -55,6 +57,7 @@ class Mixing_Augment:
             augment = random.randint(0, len(self.augments)-1)
             target, input_ = self.augments[augment](target, input_)
         return target, input_
+    
 
 class ImageCleanModel(BaseModel):
     """Base Deblur model for single image deblur."""

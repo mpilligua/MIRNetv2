@@ -12,12 +12,12 @@ import os
 from tqdm import tqdm
 from pdb import set_trace as stx
 
-split = "val"
+split = "train"
 
-src_inp = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v2/' + split
-src_gt = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Publaynet/train'
+src_inp = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v3/' + split
+src_gt = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Publaynet/' + split
 
-tar = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v2/' + split + '_crops'
+tar = '/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Datasets/Synthetic_DS_v3/' + split + '_crops'
 
 import json
 import pandas as pd
