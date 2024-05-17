@@ -27,6 +27,7 @@ from basicsr.models.losses.lpips import OCR_CRAFT_LPIPS
 
 
 
+
 class Mixing_Augment:
     def __init__(self, mixup_beta, use_identity, device):
         self.dist = torch.distributions.beta.Beta(torch.tensor([mixup_beta]), torch.tensor([mixup_beta]))
@@ -36,15 +37,16 @@ class Mixing_Augment:
 
         self.augments = [self.mixup]
 
-    def mixup(self, target, input_):
+    def mixup(self, v):
         lam = self.dist.rsample((1,1)).item()
     
-        r_index = torch.randperm(target.size(0)).to(self.device)
+        r_index = torch.randperm(v[0].size(0)).to(self.device)
     
-        target = lam * target + (1-lam) * target[r_index, :]
-        input_ = lam * input_ + (1-lam) * input_[r_index, :]
+        v2 = []
+        for element in v: 
+            v2.append(lam * element + (1 - lam) * element[r_index])
     
-        return target, input_
+        return v2
 
     def __call__(self, target, input_):
         if self.use_identity:
@@ -55,6 +57,7 @@ class Mixing_Augment:
             augment = random.randint(0, len(self.augments)-1)
             target, input_ = self.augments[augment](target, input_)
         return target, input_
+    
 
 class ImageCleanModel(BaseModel):
     """Base Deblur model for single image deblur."""
@@ -178,14 +181,14 @@ class ImageCleanModel(BaseModel):
         loss_dict['l_pix'] = l_pix
 
 
-        print("ourput shape:", self.output.shape)
+        # print("ourput shape:", self.output.shape)
         # Afegim la loss del ocr. Ha de tenir shape ((600, 800, 3)).astype(np.uint8)
         # pred_pixel_values.unsqueeze_(1)
         # pred_pixel_values = pred_pixel_values.repeat(1, 3, 1, 1)
-        loss_ocr = self.OCR_perceptual_loss(self.gt, self.output).mean()
-        loss_dict['loss_ocr'] = loss_ocr
+        # loss_ocr = self.OCR_perceptual_loss(self.gt, self.output).mean()
+        # loss_dict['loss_ocr'] = loss_ocr
 
-        loss = l_pix + loss_ocr
+        loss = l_pix # + loss_ocr
 
         loss.backward()
         if self.opt['train']['use_grad_clip']:
@@ -343,12 +346,15 @@ class ImageCleanModel(BaseModel):
             out_dict['gt'] = self.gt.detach().cpu()
         return out_dict
 
-    def save(self, epoch, current_iter):
+    def save(self, epoch, current_iter, name=None):
         if self.ema_decay > 0:
             self.save_network([self.net_g, self.net_g_ema],
                               'net_g',
                               current_iter,
                               param_key=['params', 'params_ema'])
         else:
-            self.save_network(self.net_g, 'net_g', current_iter)
-        self.save_training_state(epoch, current_iter)
+            if name is None:
+                self.save_network(self.net_g, 'net_g', current_iter)
+            else: 
+                self.save_network(self.net_g, 'net_g', current_iter, name=name)
+        # self.save_training_state(epoch, current_iter)

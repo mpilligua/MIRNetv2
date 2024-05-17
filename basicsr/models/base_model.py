@@ -211,7 +211,7 @@ class BaseModel():
         ]
 
     @master_only
-    def save_network(self, net, net_label, current_iter, param_key='params'):
+    def save_network(self, net, net_label, current_iter, param_key='params', name=None):
         """Save networks.
 
         Args:
@@ -224,6 +224,8 @@ class BaseModel():
         if current_iter == -1:
             current_iter = 'latest'
         save_filename = f'{net_label}_{current_iter}.pth'
+        if name is not None:
+            save_filename = f'z{name}_{current_iter}.pth'
         save_path = os.path.join(self.opt['path']['models'], save_filename)
 
         net = net if isinstance(net, list) else [net]

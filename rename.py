@@ -1,6 +1,6 @@
 import os
 
-dirr = r"C:\Users\Maria\OneDrive - UAB\Documentos\3r de IA\Synthesis project II\Local\Sample documents - layoutlmv3"
+dirr = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/visualization_comparison"
 
 """
 change from 
@@ -22,7 +22,7 @@ Folder2_1.png
 for root, dir, files in os.walk(dirr):
     for file in files:
         # new_name = root.split("/")[-1] + "_" + file
-        # print(os.path.join(root, file), os.path.join(root, new_name))
+        print(os.path.join(root, file), os.path.join(dirr, root.split("/")[-1] + "_" + file))
         # print(root)
         os.rename(os.path.join(root, file), os.path.join(dirr, root.split("/")[-1] + "_" + file))
         

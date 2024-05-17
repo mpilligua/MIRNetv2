@@ -2,12 +2,12 @@
 #SBATCH -A dep # account
 #SBATCH -n 2 # Number of cores
 #SBATCH -N 1 # Ensure that all cores are on one machine
-#SBATCH -D /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR # working directory
+#SBATCH -D /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2 # working directory
 #SBATCH -p dcca40 # Partition to submit to
 #SBATCH --mem 2048 # 2GB solicitados.
 #SBATCH -o %x_%u_%j.out # File to which STDOUT will be written
 #SBATCH -e %x_%u_%j.err # File to which STDERR will be written
-#SBATCH --gres gpu:1 # Para pedir gráficas
+#SBATCH --gres gpu:3 # Para pedir gráficas
 
-python /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/basicsr/train.py \
- -opt /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/Options/Document_denoising.yml
+python /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/basicsr/train.py \
+ -opt /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/Options/Document_denoising_synth_v2.yml
