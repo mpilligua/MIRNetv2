@@ -1,6 +1,6 @@
 import os
 
-dirr = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/visualization"
+dirr = r"C:\Users\Maria\OneDrive - UAB\Documentos\3r de IA\Synthesis project II\Local\Sample documents - layoutlmv3"
 
 """
 change from 

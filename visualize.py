@@ -2,11 +2,11 @@
 import os
 import matplotlib.pyplot as plt
 
-input_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/demo/degraded"
-restored_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/demo/restored"
+input_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/demo/degraded"
+restored_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/demo/restored"
 gt_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Sample documents - PNG"
 
-out_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2+DocTR/visualization/"
+out_dir = "/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/Denoise/MIRNetv2/visualization/"
 
 gt = False
 for root, dir, files in os.walk(input_dir):
